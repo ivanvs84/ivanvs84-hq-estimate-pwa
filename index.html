@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#F28C0F" />
+  <link rel="manifest" href="manifest.json" />
+  <title>HQ Painting - Estimate (Mobile)</title>
+
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --accent:#F28C0F;
+      --bg:#FFF8F0;
+      --card:#ffffff;
+      --text:#222;
+      --muted:#666;
+      --border:#f1c07f;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      padding:14px;
+    }
+    .appbar{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px 12px;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      position:sticky; top:10px; z-index:10;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+    }
+    .dot{
+      width:14px; height:14px; border-radius:99px; background:var(--accent);
+      box-shadow: 0 0 0 4px rgba(242,140,15,.15);
+    }
+    .title{
+      font-weight:800; line-height:1.05;
+    }
+    .subtitle{ font-size:12px; color:var(--muted); margin-top:2px; }
+    .btn{
+      border:0; border-radius:12px; padding:10px 12px;
+      font-weight:700; color:#fff; background:linear-gradient(90deg, var(--accent), #FFB347);
+      cursor:pointer;
+    }
+    .btn:active{ transform:scale(.99); }
+    .btn.secondary{
+      background:#fff; color:var(--accent); border:1px solid var(--accent);
+    }
+    .grid{
+      margin-top:12px;
+      display:grid; grid-template-columns:1fr; gap:12px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+    .card h3{
+      margin:0 0 10px; font-size:15px;
+      color:var(--accent);
+    }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    input, select, textarea{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      outline:none;
+      background:#fff;
+      font-size:14px;
+    }
+    textarea{ min-height:80px; resize:vertical; }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .muted{ color:var(--muted); font-size:12px; }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    th{
+      text-align:left;
+      background:var(--accent);
+      color:#fff;
+      padding:10px;
+      font-size:12px;
+      position:sticky;
+      top:66px;
+    }
+    td{
+      padding:10px;
+      border-top:1px solid #f3e1c8;
+      font-size:13px;
+      vertical-align:top;
+    }
+    .pill{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid #f0d2a6;
+      font-size:12px;
+      color:#8b4b00;
+      background:#fff3e0;
+      font-weight:700;
+    }
+    .right{ text-align:right; }
+    .actions{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .danger{ background:#fff; color:#b10000; border:1px solid #b10000; }
+    .totals{
+      display:grid; gap:8px;
+    }
+    .totrow{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:8px 10px; border-radius:12px;
+      background:#fff3e0; border:1px solid #f3e1c8;
+    }
+    .grand{
+      background:var(--accent); color:#fff; border:none;
+      font-weight:900;
+    }
+    .smallbtn{
+      padding:8px 10px; border-radius:12px; border:1px solid var(--border);
+      background:#fff; color:var(--accent); font-weight:800; cursor:pointer;
+    }
+    .hr{ height:1px; background:#f3e1c8; margin:12px 0; }
+    .file{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .note{
+      font-size:12px; color:var(--muted);
+      margin-top:6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="appbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="title">HQ Painting</div>
+        <div class="subtitle">Mobile Estimate (PWA)</div>
+      </div>
+    </div>
+    <button class="btn" id="installBtn" style="display:none;">Install</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Client / Project</h3>
+      <div class="row">
+        <div>
+          <label>Client Name</label>
+          <input id="clientName" placeholder="Ivan..." />
+        </div>
+        <div>
+          <label>Phone</label>
+          <input id="clientPhone" placeholder="(804)..." />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Email</label>
+          <input id="clientEmail" placeholder="client@email.com" />
+        </div>
+        <div>
+          <label>Project Address</label>
+          <input id="projectAddress" placeholder="39 N Courthouse Rd..." />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="smallbtn" id="saveLocalBtn">Save (Local)</button>
+        <button class="smallbtn" id="loadLocalBtn">Load (Local)</button>
+        <button class="smallbtn danger" id="clearAllBtn">Clear All</button>
+      </div>
+      <div class="note">“Save (Local)” guarda en el teléfono (localStorage). También podés Export/Import JSON abajo.</div>
+    </div>
+
+    <div class="card">
+      <h3>Add Room</h3>
+
+      <div class="row">
+        <div>
+          <label>Room Name</label>
+          <input id="roomName" placeholder="Living Room" value="Living Room"/>
+        </div>
+        <div>
+          <label>Finish</label>
+          <select id="finish">
+            <option>Flat</option>
+            <option>Satin</option>
+            <option>Semi-gloss</option>
+            <option>Gloss</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label>Length (ft)</label>
+          <input id="len" type="number" inputmode="decimal" value="15" />
+        </div>
+        <div>
+          <label>Width (ft)</label>
+          <input id="wid" type="number" inputmode="decimal" value="12" />
+        </div>
+        <div>
+          <label>Height (ft)</label>
+          <input id="hei" type="number" inputmode="decimal" value="8" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Coats</label>
+          <input id="coats" type="number" inputmode="numeric" value="2" />
+        </div>
+        <div>
+          <label>Ceiling?</label>
+          <select id="hasCeiling">
+            <option value="yes" selected>Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label>Coverage (ft²/gal)</label>
+          <input id="coverage" type="number" inputmode="decimal" value="350" />
+        </div>
+        <div>
+          <label>Price / gal ($)</label>
+          <input id="price" type="number" inputmode="decimal" value="30" />
+        </div>
+        <div>
+          <label>Labor ($/ft²)</label>
+          <input id="labor" type="number" inputmode="decimal" value="1.5" />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div>
+          <label>Doors (qty)</label>
+          <input id="doorsQty" type="number" inputmode="numeric" value="1" />
+          <div class="row">
+            <div>
+              <label>Door W (ft)</label>
+              <input id="doorW" type="number" inputmode="decimal" value="3" />
+            </div>
+            <div>
+              <label>Door H (ft)</label>
+              <input id="doorH" type="number" inputmode="decimal" value="6.67" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label>Windows (qty)</label>
+          <input id="winQty" type="number" inputmode="numeric" value="2" />
+          <div class="row">
+            <div>
+              <label>Window W (ft)</label>
+              <input id="winW" type="number" inputmode="decimal" value="3" />
+            </div>
+            <div>
+              <label>Window H (ft)</label>
+              <input id="winH" type="number" inputmode="decimal" value="4" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Trim height (ft)</label>
+          <input id="trimH" type="number" inputmode="decimal" value="0.5" />
+          <div class="muted">Trim area = perimeter × trim height</div>
+        </div>
+        <div>
+          <label>Notes (optional)</label>
+          <textarea id="notes" placeholder="Prep notes..."></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="addRoomBtn">Add Room</button>
+        <button class="btn secondary" id="resetRoomBtn">Reset Room</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Rooms</h3>
+      <div style="overflow:auto; max-height: 360px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th class="right">Walls ft²</th>
+              <th class="right">Ceil ft²</th>
+              <th class="right">Trim ft²</th>
+              <th class="right">Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="roomsTbody"></tbody>
+        </table>
+      </div>
+      <div class="note">Tip: para editar rápido, borrás el room y lo agregás de nuevo.</div>
+    </div>
+
+    <div class="card">
+      <h3>Totals</h3>
+
+      <div class="row3">
+        <div>
+          <label>Tax %</label>
+          <input id="taxPct" type="number" inputmode="decimal" value="8" />
+        </div>
+        <div>
+          <label>Discount %</label>
+          <input id="discPct" type="number" inputmode="decimal" value="0" />
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="status">
+            <option>Pending</option>
+            <option>Accepted</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="totals" style="margin-top:12px;">
+        <div class="totrow"><span>Materials</span><b id="tMaterials">$0.00</b></div>
+        <div class="totrow"><span>Labor</span><b id="tLabor">$0.00</b></div>
+        <div class="totrow"><span>Subtotal</span><b id="tSubtotal">$0.00</b></div>
+        <div class="totrow"><span>Discount</span><b id="tDiscount">$0.00</b></div>
+        <div class="totrow"><span>Tax</span><b id="tTax">$0.00</b></div>
+        <div class="totrow grand"><span>Project Total</span><span id="tTotal">$0.00</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="exportPdfBtn">Export PDF</button>
+        <button class="btn secondary" id="exportJsonBtn">Export JSON</button>
+        <label class="smallbtn" style="display:inline-flex; align-items:center; gap:8px;">
+          Import JSON
+          <input id="importJsonInput" type="file" accept="application/json" style="display:none;" />
+        </label>
+      </div>
+
+      <div class="note">
+        PDF sale “bonito” para el cliente. JSON es para guardar/cargar proyectos.
+      </div>
+    </div>
+  </div>
+
+<script>
+  // --- PWA install button ---
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  // --- helpers ---
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => {
+    const v = Number(n || 0);
+    return v.toLocaleString(undefined, { style:'currency', currency:'USD' });
+  };
+  const nf = (x, fallback=0) => {
+    const v = Number(x);
+    return Number.isFinite(v) ? v : fallback;
+  };
+  const ceilInt = (x, min=0) => {
+    const v = Number(x);
+    if (!Number.isFinite(v) || v <= 0) return min;
+    const n = Math.floor(v);
+    return (v === n) ? Math.max(min, n) : Math.max(min, n+1);
+  };
+
+  // --- state ---
+  let state = {
+    client: { name:'', phone:'', email:'', address:'' },
+    settings: { taxPct: 8, discPct: 0, status: 'Pending' },
+    rooms: []
+  };
+
+  // --- compute room ---
+  function computeRoom(input){
+    const length = nf(input.length);
+    const width  = nf(input.width);
+    const height = nf(input.height);
+    const coats  = Math.max(1, Math.round(nf(input.coats, 2)));
+    const coverage = Math.max(1, nf(input.coverage, 350));
+    const price = Math.max(0, nf(input.price, 30));
+    const labor = Math.max(0, nf(input.labor, 1.5));
+
+    const doorsQty = Math.max(0, Math.round(nf(input.doorsQty, 0)));
+    const doorW = Math.max(0, nf(input.doorW, 0));
+    const doorH = Math.max(0, nf(input.doorH, 0));
+
+    const winQty = Math.max(0, Math.round(nf(input.winQty, 0)));
+    const winW = Math.max(0, nf(input.winW, 0));
+    const winH = Math.max(0, nf(input.winH, 0));
+
+    const trimH = Math.max(0, nf(input.trimH, 0.5));
+    const hasCeiling = input.hasCeiling === 'yes';
+
+    const doorArea = doorsQty * (doorW * doorH);
+    const winArea = winQty * (winW * winH);
+
+    const wallArea = 2 * ((length * height) + (width * height));
+    const ceilingArea = hasCeiling ? (length * width) : 0;
+
+    const perimeter = 2 * (length + width);
+    const trimArea = perimeter * trimH;
+
+    const wallsPaintable = Math.max(wallArea - doorArea - winArea, 0);
+
+    const wallsGal = (wallsPaintable * coats) / coverage;
+    const ceilGal  = (ceilingArea * coats) / coverage;
+    const trimGal  = (trimArea * coats) / coverage;
+
+    const wallsGalR = wallsPaintable > 0 ? ceilInt(wallsGal, 1) : 0;
+    const ceilGalR  = ceilingArea > 0 ? ceilInt(ceilGal, 1) : 0;
+    const trimGalR  = trimArea > 0 ? ceilInt(trimGal, 1) : 0;
+
+    const wallsMat = wallsGalR * price;
+    const ceilMat  = ceilGalR * price;
+    const trimMat  = trimGalR * price;
+    const materials = wallsMat + ceilMat + trimMat;
+
+    const laborCost = (wallsPaintable + ceilingArea + trimArea) * labor;
+
+    return {
+      ...input,
+      length, width, height, coats, coverage, price, labor,
+      areas: { walls: wallsPaintable, ceiling: ceilingArea, trim: trimArea },
+      gallons: { walls: wallsGalR, ceiling: ceilGalR, trim: trimGalR },
+      costs: { wallsMat, ceilMat, trimMat, materials, laborCost },
+    };
+  }
+
+  // --- totals ---
+  function computeTotals(){
+    const taxPct = nf($('taxPct').value, state.settings.taxPct);
+    const discPct = nf($('discPct').value, state.settings.discPct);
+
+    let materials = 0, labor = 0;
+    for (const r of state.rooms){
+      materials += nf(r.costs.materials);
+      labor += nf(r.costs.laborCost);
+    }
+    const subtotal = materials + labor;
+    const discount = subtotal * (discPct/100);
+    const afterDisc = subtotal - discount;
+    const tax = afterDisc * (taxPct/100);
+    const total = afterDisc + tax;
+
+    $('tMaterials').textContent = fmt(materials);
+    $('tLabor').textContent = fmt(labor);
+    $('tSubtotal').textContent = fmt(subtotal);
+    $('tDiscount').textContent = fmt(discount);
+    $('tTax').textContent = fmt(tax);
+    $('tTotal').textContent = fmt(total);
+
+    state.settings.taxPct = taxPct;
+    state.settings.discPct = discPct;
+    state.settings.status = $('status').value;
+
+    return { materials, labor, subtotal, discount, tax, total, taxPct, discPct };
+  }
+
+  // --- render table ---
+  function renderRooms(){
+    const tbody = $('roomsTbody');
+    tbody.innerHTML = '';
+    state.rooms.forEach((r, idx) => {
+      const tr = document.createElement('tr');
+      const roomTotal = r.costs.materials + r.costs.laborCost;
+      tr.innerHTML = `
+        <td>
+          <div style="font-weight:800">${escapeHtml(r.roomName)}</div>
+          <div class="muted">${escapeHtml(r.finish)} • ${r.coats} coats</div>
+          ${r.notes ? `<div class="muted" style="margin-top:6px;">${escapeHtml(r.notes)}</div>` : ''}
+          <div style="margin-top:6px;">
+            <span class="pill">Mat ${fmt(r.costs.materials)}</span>
+            <span class="pill">Labor ${fmt(r.costs.laborCost)}</span>
+          </div>
+        </td>
+        <td class="right">${r.areas.walls.toFixed(1)}</td>
+        <td class="right">${r.areas.ceiling.toFixed(1)}</td>
+        <td class="right">${r.areas.trim.toFixed(1)}</td>
+        <td class="right"><b>${fmt(roomTotal)}</b></td>
+        <td class="right">
+          <button class="smallbtn danger" data-del="${idx}">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // delete handlers
+    document.querySelectorAll('button[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.getAttribute('data-del'));
+        state.rooms.splice(i, 1);
+        saveLocal();
+        renderRooms();
+        computeTotals();
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  // --- local save/load ---
+  function pullClientIntoState(){
+    state.client.name = $('clientName').value || '';
+    state.client.phone = $('clientPhone').value || '';
+    state.client.email = $('clientEmail').value || '';
+    state.client.address = $('projectAddress').value || '';
+    state.settings.status = $('status').value || 'Pending';
+  }
+
+  function pushClientFromState(){
+    $('clientName').value = state.client.name || '';
+    $('clientPhone').value = state.client.phone || '';
+    $('clientEmail').value = state.client.email || '';
+    $('projectAddress').value = state.client.address || '';
+    $('taxPct').value = state.settings.taxPct ?? 8;
+    $('discPct').value = state.settings.discPct ?? 0;
+    $('status').value = state.settings.status || 'Pending';
+  }
+
+  function saveLocal(){
+    pullClientIntoState();
+    localStorage.setItem('hq_estimate_mobile_v1', JSON.stringify(state));
+  }
+
+  function loadLocal(){
+    const raw = localStorage.getItem('hq_estimate_mobile_v1');
+    if (!raw) return false;
+    try{
+      const obj = JSON.parse(raw);
+      state = obj;
+      // recompute derived fields
+      state.rooms = (state.rooms || []).map(r => computeRoom(r));
+      pushClientFromState();
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  // --- room form ---
+  function resetRoomForm(){
+    $('roomName').value = 'Living Room';
+    $('finish').value = 'Flat';
+    $('len').value = 15;
+    $('wid').value = 12;
+    $('hei').value = 8;
+    $('coats').value = 2;
+    $('hasCeiling').value = 'yes';
+    $('coverage').value = 350;
+    $('price').value = 30;
+    $('labor').value = 1.5;
+
+    $('doorsQty').value = 1;
+    $('doorW').value = 3;
+    $('doorH').value = 6.67;
+
+    $('winQty').value = 2;
+    $('winW').value = 3;
+    $('winH').value = 4;
+
+    $('trimH').value = 0.5;
+    $('notes').value = '';
+  }
+
+  $('addRoomBtn').addEventListener('click', () => {
+    const input = {
+      roomName: $('roomName').value.trim() || 'Room',
+      finish: $('finish').value,
+      length: $('len').value,
+      width: $('wid').value,
+      height: $('hei').value,
+      coats: $('coats').value,
+      hasCeiling: $('hasCeiling').value,
+      coverage: $('coverage').value,
+      price: $('price').value,
+      labor: $('labor').value,
+      doorsQty: $('doorsQty').value,
+      doorW: $('doorW').value,
+      doorH: $('doorH').value,
+      winQty: $('winQty').value,
+      winW: $('winW').value,
+      winH: $('winH').value,
+      trimH: $('trimH').value,
+      notes: $('notes').value.trim()
+    };
+
+    const length = nf(input.length), width = nf(input.width), height = nf(input.height);
+    if (!(length>0 && width>0 && height>0)){
+      alert('Pon números válidos para Length/Width/Height.');
+      return;
+    }
+
+    const room = computeRoom(input);
+    state.rooms.push(room);
+
+    saveLocal();
+    renderRooms();
+    computeTotals();
+    resetRoomForm();
+  });
+
+  $('resetRoomBtn').addEventListener('click', resetRoomForm);
+
+  // totals update on change
+  ['taxPct','discPct','status'].forEach(id => {
+    $(id).addEventListener('input', () => { saveLocal(); computeTotals(); });
+    $(id).addEventListener('change', () => { saveLocal(); computeTotals(); });
+  });
+
+  // local buttons
+  $('saveLocalBtn').addEventListener('click', () => { saveLocal(); alert('Guardado en el teléfono ✅'); });
+  $('loadLocalBtn').addEventListener('click', () => {
+    const ok = loadLocal();
+    if (!ok) alert('No hay nada guardado todavía.');
+    renderRooms();
+    computeTotals();
+  });
+
+  $('clearAllBtn').addEventListener('click', () => {
+    if (!confirm('¿Seguro que querés borrar todo?')) return;
+    state = { client:{name:'',phone:'',email:'',address:''}, settings:{taxPct:8,discPct:0,status:'Pending'}, rooms:[] };
+    saveLocal();
+    pushClientFromState();
+    renderRooms();
+    computeTotals();
+    resetRoomForm();
+  });
+
+  // --- Export JSON ---
+  $('exportJsonBtn').addEventListener('click', () => {
+    saveLocal();
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const stamp = new Date().toISOString().slice(0,19).replaceAll(':','-');
+    a.download = `HQ_Estimate_${stamp}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // --- Import JSON ---
+  $('importJsonInput').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    try{
+      const obj = JSON.parse(text);
+      state = obj;
+      state.rooms = (state.rooms || []).map(r => computeRoom(r));
+      pushClientFromState();
+      saveLocal();
+      renderRooms();
+      computeTotals();
+      alert('Proyecto importado ✅');
+    }catch(err){
+      alert('JSON inválido.');
+    }finally{
+      e.target.value = '';
+    }
+  });
+
+  // --- Export PDF ---
+  $('exportPdfBtn').addEventListener('click', () => {
+    if (!state.rooms.length){
+      alert('Agregá al menos un room.');
+      return;
+    }
+    saveLocal();
+    const totals = computeTotals();
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:'pt', format:'letter' });
+
+    const left = 40;
+    let y = 48;
+
+    // header
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(20);
+    doc.text('HQ Painting LLC', left, y);
+    y += 18;
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.text('Estimate Report', left, y);
+    doc.text(new Date().toLocaleString(), 430, y);
+    y += 18;
+
+    doc.setDrawColor(242,140,15);
+    doc.setLineWidth(1);
+    doc.line(left, y, 572, y);
+    y += 16;
+
+    // client box
+    const c = state.client;
+    doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text('Client / Project', left, y);
+    y += 12;
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text(`Client: ${c.name || ''}`, left, y); y += 12;
+    doc.text(`Phone: ${c.phone || ''}`, left, y); y += 12;
+    doc.text(`Email: ${c.email || ''}`, left, y); y += 12;
+    doc.text(`Address: ${c.address || ''}`, left, y); y += 12;
+    doc.text(`Status: ${state.settings.status}`, left, y); y += 14;
+
+    doc.line(left, y, 572, y);
+    y += 18;
+
+    // rooms
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.text('Room Breakdown', left, y);
+    y += 14;
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+
+    for (const r of state.rooms){
+      const roomTotal = r.costs.materials + r.costs.laborCost;
+
+      const lines = [
+        `${r.roomName} — ${r.finish} — ${r.coats} coats`,
+        `Walls: ${r.areas.walls.toFixed(1)} ft² | Ceiling: ${r.areas.ceiling.toFixed(1)} ft² | Trim: ${r.areas.trim.toFixed(1)} ft²`,
+        `Materials: ${fmt(r.costs.materials)} | Labor: ${fmt(r.costs.laborCost)} | Room Total: ${fmt(roomTotal)}`,
+      ];
+      if (r.notes) lines.push(`Notes: ${r.notes}`);
+
+      // page break
+      if (y > 700){
+        doc.addPage();
+        y = 48;
+      }
+
+      doc.setFont('helvetica','bold');
+      doc.text(lines[0], left, y); y += 12;
+
+      doc.setFont('helvetica','normal');
+      doc.text(lines[1], left, y); y += 12;
+      doc.text(lines[2], left, y); y += 12;
+
+      if (r.notes){
+        const wrapped = doc.splitTextToSize(lines[3], 520);
+        doc.text(wrapped, left, y);
+        y += (wrapped.length * 12);
+      }
+
+      y += 10;
+      doc.setDrawColor(230, 200, 160);
+      doc.line(left, y, 572, y);
+      y += 14;
+    }
+
+    // totals
+    if (y > 650){
+      doc.addPage();
+      y = 48;
+    }
+    doc.setFont('helvetica','bold'); doc.setFontSize(12);
+    doc.text('Totals', left, y); y += 16;
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(11);
+    doc.text(`Materials: ${fmt(totals.materials)}`, left, y); y += 14;
+    doc.text(`Labor: ${fmt(totals.labor)}`, left, y); y += 14;
+    doc.text(`Subtotal: ${fmt(totals.subtotal)}`, left, y); y += 14;
+    doc.text(`Discount (${totals.discPct}%): -${fmt(totals.discount)}`, left, y); y += 14;
+    doc.text(`Tax (${totals.taxPct}%): ${fmt(totals.tax)}`, left, y); y += 14;
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text(`PROJECT TOTAL: ${fmt(totals.total)}`, left, y+6);
+
+    const stamp = new Date().toISOString().slice(0,19).replaceAll(':','-');
+    doc.save(`HQ_Estimate_${stamp}.pdf`);
+  });
+
+  // initial
+  resetRoomForm();
+  loadLocal();
+  pushClientFromState();
+  renderRooms();
+  computeTotals();
+
+  // service worker registration
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+</script>
+</body>
+</html>
